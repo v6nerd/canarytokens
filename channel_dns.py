@@ -229,7 +229,7 @@ class ChannelDNS(InputChannel):
         self.logfile.write('%r\n' % query)
         self.logfile.flush()
 
-        if True in [query.name.name.lower().endswith(d) for d in self.canary_domains]:
+        if not True in [query.name.name.lower().endswith(d) for d in self.canary_domains]:
             return defer.fail(error.DNSQueryRefusedError())
 
         if query.type == dns.NS:
