@@ -74,6 +74,13 @@ class CanarytokenPage(resource.Resource, InputChannel):
                                            canarytoken=token.value(),
                                            redirect_url=canarydrop._drop['redirect_url']).encode('utf8')
 
+            if canarydrop['web_image_enabled'] and os.path.exists(canarydrop['web_image_path']):
+                mimetype = "image/"+canarydrop['web_image_path'][-3:]
+                with open(canarydrop['web_image_path'], "r") as f:
+                    contents = f.read()
+                request.setHeader("Content-Type", mimetype)
+                return contents
+
             if request.getHeader('Accept') and "text/html" in request.getHeader('Accept'):
                 if canarydrop['browser_scanner_enabled']:
                     template = env.get_template('browser_scanner.html')
@@ -88,12 +95,6 @@ class CanarytokenPage(resource.Resource, InputChannel):
                         return template.render(fortune=fortune).encode('utf8')
                     except Exception as e:
                         log.err('Could not get a fortune: {e}'.format(e=e))
-            if canarydrop['web_image_enabled'] and os.path.exists(canarydrop['web_image_path']):
-                mimetype = "image/"+canarydrop['web_image_path'][-3:]
-                with open(canarydrop['web_image_path'], "r") as f:
-                    contents = f.read()
-                request.setHeader("Content-Type", mimetype)
-                return contents
 
         except Exception as e:
             log.err('Error in render GET: {error}'.format(error=e))
