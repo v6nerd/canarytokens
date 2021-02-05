@@ -84,16 +84,10 @@ def delete_webhook_tokens(webhook):
     # delete idx set
     db.delete(KEY_WEBHOOK_IDX+webhook)
 
-def list_email_tokens(email_address=None):
-    if not email_address:
-        raise ValueError
-    
+def list_email_tokens(email_address):
     return db.smembers(KEY_EMAIL_IDX+email_address)
 
-def list_webhook_tokens(webhook=None):
-    if not webhook:
-        raise ValueError
-
+def list_webhook_tokens(webhook):
     return db.smembers(KEY_WEBHOOK_IDX+webhook)
 
 def add_canary_google_api_key(key=None):
