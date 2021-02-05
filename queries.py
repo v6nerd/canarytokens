@@ -11,7 +11,7 @@ from redismanager import db, KEY_CANARYDROP, KEY_CANARY_DOMAINS,\
      KEY_IMGUR_TOKENS, KEY_LINKEDIN_ACCOUNT, KEY_LINKEDIN_ACCOUNTS,\
      KEY_BITCOIN_ACCOUNTS, KEY_BITCOIN_ACCOUNT, KEY_CANARY_NXDOMAINS,\
      KEY_CLONEDSITE_TOKEN, KEY_CLONEDSITE_TOKENS, KEY_CANARY_IP_CACHE, \
-     KEY_CANARY_GOOGLE_API_KEY, KEY_TOR_EXIT_NODES
+     KEY_CANARY_GOOGLE_API_KEY, KEY_TOR_EXIT_NODES, KEY_WEBHOOK_IDX, KEY_EMAIL_IDX
 
 from twisted.python import log
 from twisted.web.client import getPage
@@ -66,6 +66,49 @@ def add_canary_nxdomain(domain=None):
 
     return db.sadd(KEY_CANARY_NXDOMAINS, domain)
 
+def add_alert_channel_idx(email_webhook=None, canarytoken=None, key_email_webhook=None):
+    if not email_webhook:
+        raise ValueError
+
+    if not canarytoken:
+        raise ValueError
+
+    if not key_email_webhook:
+        raise ValueError
+        
+    return db.sadd(key_email_webhook+email_webhook, canarytoken)
+    
+def delete_email_tokens(email_address=None):
+    if not email_address:
+        raise ValueError
+
+    for token in db.smembers(KEY_EMAIL_IDX+email_address):
+        db.delete(KEY_CANARYDROP+token)
+    # delete idx set
+    db.delete(KEY_EMAIL_IDX+email_address)
+
+def delete_webhook_tokens(webhook=None):
+    if not webhook:
+        raise ValueError
+
+    for token in db.smembers(KEY_WEBHOOK_IDX+webhook):
+        db.delete(KEY_CANARYDROP+token)
+        
+    # delete idx set
+    db.delete(KEY_WEBHOOK_IDX+webhook)
+
+def list_email_tokens(email_address=None):
+    if not email_address:
+        raise ValueError
+    
+    return db.smembers(KEY_EMAIL_IDX+email_address)
+
+def list_webhook_tokens(webhook=None):
+    if not webhook:
+        raise ValueError
+
+    return db.smembers(KEY_WEBHOOK_IDX+webhook)
+
 def add_canary_google_api_key(key=None):
     if not key:
         return None
@@ -91,6 +134,12 @@ def save_canarydrop(canarydrop=None):
     if db.zscore(KEY_CANARYDROPS_TIMELINE, canarytoken.value()) == None:
         current_time = datetime.datetime.utcnow().strftime("%s.%f")
         db.zadd(KEY_CANARYDROPS_TIMELINE, current_time, canarytoken.value())
+
+    if len(canarydrop['alert_email_recipient']) > 0:
+        add_alert_channel_idx(canarydrop['alert_email_recipient'],canarytoken.value(),KEY_EMAIL_IDX)
+
+    if len(canarydrop['alert_webhook_url']) > 0:
+        add_alert_channel_idx(canarydrop['alert_webhook_url'],canarytoken.value(),KEY_WEBHOOK_IDX)
 
 def get_canarydrop_triggered_list(canarytoken):
     """
