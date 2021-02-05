@@ -66,34 +66,21 @@ def add_canary_nxdomain(domain=None):
 
     return db.sadd(KEY_CANARY_NXDOMAINS, domain)
 
-def add_alert_channel_idx(email_webhook=None, canarytoken=None, key_email_webhook=None):
-    if not email_webhook:
-        raise ValueError
+def add_email_token_idx(email, canarytoken):
+   return db.sadd(KEY_EMAIL_IDX+email, canarytoken)
 
-    if not canarytoken:
-        raise ValueError
-
-    if not key_email_webhook:
-        raise ValueError
-        
-    return db.sadd(key_email_webhook+email_webhook, canarytoken)
+def add_webhook_token_idx(webhook, canarytoken):
+   return db.sadd(KEY_WEBHOOK_IDX+webhook, canarytoken)
     
-def delete_email_tokens(email_address=None):
-    if not email_address:
-        raise ValueError
-
+def delete_email_tokens(email_address):
     for token in db.smembers(KEY_EMAIL_IDX+email_address):
         db.delete(KEY_CANARYDROP+token)
     # delete idx set
     db.delete(KEY_EMAIL_IDX+email_address)
 
-def delete_webhook_tokens(webhook=None):
-    if not webhook:
-        raise ValueError
-
+def delete_webhook_tokens(webhook):
     for token in db.smembers(KEY_WEBHOOK_IDX+webhook):
         db.delete(KEY_CANARYDROP+token)
-        
     # delete idx set
     db.delete(KEY_WEBHOOK_IDX+webhook)
 
@@ -135,11 +122,11 @@ def save_canarydrop(canarydrop=None):
         current_time = datetime.datetime.utcnow().strftime("%s.%f")
         db.zadd(KEY_CANARYDROPS_TIMELINE, current_time, canarytoken.value())
 
-    if len(canarydrop['alert_email_recipient']) > 0:
-        add_alert_channel_idx(canarydrop['alert_email_recipient'],canarytoken.value(),KEY_EMAIL_IDX)
+    if canarydrop['alert_email_recipient']:
+        add_email_token_idx(canarydrop['alert_email_recipient'],canarytoken.value())
 
-    if len(canarydrop['alert_webhook_url']) > 0:
-        add_alert_channel_idx(canarydrop['alert_webhook_url'],canarytoken.value(),KEY_WEBHOOK_IDX)
+    if canarydrop['alert_webhook_url']:
+        add_webhook_token_idx(canarydrop['alert_webhook_url'],canarytoken.value())
 
 def get_canarydrop_triggered_list(canarytoken):
     """
